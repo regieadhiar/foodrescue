@@ -1,0 +1,13 @@
+{
+  "name": "foodrescue",
+  "version": "1.0.0",
+  "description": "FoodRescue - Mobile-First Food Saving Web App",
+  "main": "index.php",
+  "scripts": {
+    "build": "tailwindcss -i ./assets/css/input.css -o ./assets/css/output.css --minify",
+    "watch": "tailwindcss -i ./assets/css/input.css -o ./assets/css/output.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}
