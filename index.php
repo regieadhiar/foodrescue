@@ -3,6 +3,22 @@
 
 require_once __DIR__ . '/includes/auth.php';
 
+// 0. Landing page check — show once per session
+if (!isset($_SESSION['visited']) && !isset($_GET['skip'])) {
+    $_SESSION['visited'] = true;
+    include __DIR__ . '/landing.php';
+    exit;
+}
+$_SESSION['visited'] = true;
+
+// Handle open_modal param — store in session so it survives page reloads
+if (isset($_GET['open_modal'])) {
+    $_SESSION['open_modal'] = $_GET['open_modal'];
+    // Redirect to remove query param
+    header("Location: index.php");
+    exit;
+}
+
 // 1. Handle view switching requests
 if (isset($_GET['switch_view'])) {
     $targetView = $_GET['switch_view'];
@@ -50,4 +66,17 @@ echo '</main>';
 // Include modals overlays (Auth, Reg Merchant, Orders History, Details)
 include __DIR__ . '/components/auth_modals.php';
 
-include __DIR__ . '/components/footer.php';
+// Auto-open modal from session, then clear it
+$openModal = $_SESSION['open_modal'] ?? '';
+unset($_SESSION['open_modal']);
+if ($openModal && !$currentUser):
+?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var m = '<?= htmlspecialchars($openModal, ENT_QUOTES) ?>';
+    if (document.getElementById(m)) openModal(m);
+});
+</script>
+<?php endif; ?>
+
+<?php include __DIR__ . '/components/footer.php'; ?>

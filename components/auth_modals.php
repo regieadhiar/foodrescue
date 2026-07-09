@@ -231,16 +231,21 @@ $csrfToken = get_csrf_token();
                         <textarea name="address" required rows="2" placeholder="Masukkan jalan, nomor, RT/RW, kelurahan" class="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500 transition resize-none"></textarea>
                     </div>
                     
-                    <!-- Coordinate selection map picker -->
+                    <!-- Coordinate selection map picker with search -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1 flex justify-between items-center">
-                            <span>Tentukan Lokasi Toko di Peta</span>
-                            <span class="text-[10px] text-emerald-600 font-normal"><i class="fa-solid fa-location-crosshairs mr-1"></i>Klik pada peta untuk geser pin</span>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">
+                            Tentukan Lokasi Toko di Peta
                         </label>
+                        <!-- Search input -->
+                        <div class="relative mb-2">
+                            <input type="text" id="reg-map-search" placeholder="Cari lokasi (jalan, kota, dll)..." class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500 transition pl-8">
+                            <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
+                            <div id="reg-map-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto"></div>
+                        </div>
                         <!-- Mini Map container -->
                         <div id="modal-map-picker" class="h-32 w-full rounded-xl border border-slate-200 z-10"></div>
                         
-                        <!-- Invisible fields to send coordinate -->
+                        <!-- Coordinate fields -->
                         <div class="grid grid-cols-2 gap-2 mt-2">
                             <div>
                                 <label class="text-[9px] text-slate-400 block">Latitude</label>

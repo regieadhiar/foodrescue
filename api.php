@@ -16,7 +16,7 @@ if (empty($action)) {
 }
 
 // CSRF protection for state-changing (POST) requests
-$stateChangingActions = ['login', 'register', 'logout', 'register_merchant', 'add_food_item', 'claim_food_item', 'toggle_merchant_status', 'forgot_password', 'reset_password', 'verify_qr_claim'];
+$stateChangingActions = ['login', 'register', 'logout', 'register_merchant', 'add_food_item', 'claim_food_item', 'toggle_merchant_status', 'forgot_password', 'reset_password', 'verify_qr_claim', 'update_profile', 'deactivate_merchant'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, $stateChangingActions)) {
     $csrfToken = $requestData['csrf_token'] ?? '';
     if (!validate_csrf_token($csrfToken)) {
@@ -86,6 +86,14 @@ switch ($action) {
         api_get_initial_data();
         break;
         
+    case 'update_profile':
+        api_update_profile($requestData);
+        break;
+
+    case 'deactivate_merchant':
+        api_deactivate_merchant();
+        break;
+
     default:
         send_json(false, 'Aksi tidak dikenal.');
         break;

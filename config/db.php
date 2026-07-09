@@ -1,10 +1,34 @@
 <?php
 // config/db.php
 
-$host = '127.0.0.1';
-$user = 'root';
-$pass = 'root';
-$dbname = 'foodrescue';
+$env = [];
+
+$local_env = __DIR__ . '/../.env';
+
+if (file_exists($local_env)) {
+    // Local: .env is KEY=VALUE lines
+    $lines = file($local_env, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos($line, '=') !== false) {
+            [$key, $value] = explode('=', $line, 2);
+            $env[trim($key)] = trim($value, " \t\n\r\0\x0B\"'");
+        }
+    }
+} else {
+    // Production: .env.php at cPanel home root
+    $cpanel_secret_path = '/home/studioeg/.env.foodrescue.php';
+    if (file_exists($cpanel_secret_path)) {
+        $env = include $cpanel_secret_path;
+    } else {
+        die("Gagal memuat konfigurasi: File rahasia tidak ditemukan di cPanel (" . $cpanel_secret_path . ") maupun di Lokal (" . $local_env . ").");
+    }
+}
+
+$host = $env['DB_HOST'] ?? '127.0.0.1';
+$user = $env['DB_USER'] ?? 'root';
+$pass = $env['DB_PASS'] ?? '';
+$dbname = $env['DB_NAME'] ?? 'foodrescue';
 
 try {
     // 1. First connect without selecting database to ensure it exists
@@ -100,6 +124,13 @@ try {
     }
     try {
         $pdo->exec("ALTER TABLE users ADD COLUMN reset_token_expiry DATETIME NULL");
+    } catch (PDOException $e) {
+        // Column already exists
+    }
+
+    // Add profile_picture column to users table if not exists
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN profile_picture VARCHAR(255) NULL");
     } catch (PDOException $e) {
         // Column already exists
     }

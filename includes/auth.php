@@ -100,7 +100,8 @@ function logout_user() {
         $params = session_get_cookie_params();
         setcookie(session_name(), '', time() - 42000,
             $params["path"], $params["domain"],
-            $params["secure"], $params["httponly"]
+            false, // Force secure=false to clear existing secure cookie
+            $params["httponly"]
         );
     }
     
@@ -115,12 +116,22 @@ function logout_user() {
 /**
  * Get the currently logged in user info (checks session first, then auto-login cookie fallback)
  */
+/**
+ * Get profile picture URL with fallback to initial letter
+ */
+function get_profile_pic_url($user) {
+    if (!empty($user['profile_picture'])) {
+        return htmlspecialchars($user['profile_picture']);
+    }
+    return null;
+}
+
 function get_logged_in_user() {
     global $pdo;
     
     // 1. Check if session is already active
     if (isset($_SESSION['user_id'])) {
-        $stmt = $pdo->prepare("SELECT id, username, email, role FROM users WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT id, username, email, role, profile_picture FROM users WHERE id = ?");
         $stmt->execute([$_SESSION['user_id']]);
         $user = $stmt->fetch();
         if ($user) {
@@ -144,7 +155,7 @@ function get_logged_in_user() {
         $userId = $_COOKIE['fr_user_id'];
         $token = $_COOKIE['fr_remember_token'];
         
-        $stmt = $pdo->prepare("SELECT id, username, email, role, remember_token FROM users WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT id, username, email, role, remember_token, profile_picture FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $user = $stmt->fetch();
         

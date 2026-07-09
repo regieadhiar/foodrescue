@@ -1,5 +1,8 @@
 // assets/js/map.js
 
+// Geocoding search debounce timer
+let _geoTimeout = null;
+
 // Global maps instances
 window.mainMap = null;
 window.mainMapMarkerGroup = null;
@@ -347,6 +350,120 @@ function updatePickerInputs(lat, lng) {
         latInput.value = lat.toFixed(6);
         lngInput.value = lng.toFixed(6);
     }
+}
+
+/**
+ * Generic map picker with search (Nominatim geocoding) + draggable pin
+ * @param {Object} opts
+ * @param {string} opts.containerEl - map container element ID
+ * @param {string} opts.latInputId - latitude input element ID
+ * @param {string} opts.lngInputId - longitude input element ID
+ * @param {string} opts.searchInputId - search input element ID (optional)
+ * @param {string} opts.searchResultsId - search results container ID (optional)
+ * @param {number} opts.lat - initial latitude
+ * @param {number} opts.lng - initial longitude
+ * @param {string} opts.mapInstanceVar - window variable name to store map instance
+ * @param {string} opts.markerVar - window variable name to store marker instance
+ */
+function initPickerWithSearch(opts) {
+    const el = document.getElementById(opts.containerEl);
+    if (!el) return;
+
+    // Use existing map instance if already initialized
+    const mapVar = opts.mapInstanceVar || 'pickerMap';
+    const markerVar = opts.markerVar || 'pickerMarker';
+    if (window[mapVar]) {
+        setTimeout(() => { window[mapVar].invalidateSize(); }, 300);
+        return;
+    }
+
+    const centerLat = opts.lat || defaultLat;
+    const centerLng = opts.lng || defaultLng;
+
+    // Initialize map
+    const map = L.map(opts.containerEl, { zoomControl: false }).setView([centerLat, centerLng], 14);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    // Draggable pin
+    const pinHtml = `<div class="w-8 h-8 flex items-center justify-center bg-amber-500 rounded-full text-white border-2 border-white shadow-lg"><i class="fa-solid fa-store text-xs"></i></div>`;
+    const icon = L.divIcon({ html: pinHtml, className: 'custom-pin-picker', iconSize: [32, 32], iconAnchor: [16, 32] });
+
+    const marker = L.marker([centerLat, centerLng], { draggable: true, icon: icon }).addTo(map);
+    window[markerVar] = marker;
+    window[mapVar] = map;
+
+    // Sync coordinates
+    function syncCoords(lat, lng) {
+        const latInp = document.getElementById(opts.latInputId);
+        const lngInp = document.getElementById(opts.lngInputId);
+        if (latInp && lngInp) {
+            latInp.value = lat.toFixed(6);
+            lngInp.value = lng.toFixed(6);
+        }
+    }
+    syncCoords(centerLat, centerLng);
+
+    marker.on('dragend', function (e) {
+        const pos = e.target.getLatLng();
+        syncCoords(pos.lat, pos.lng);
+    });
+    map.on('click', function (e) {
+        marker.setLatLng(e.latlng);
+        syncCoords(e.latlng.lat, e.latlng.lng);
+    });
+
+    // Search via Nominatim
+    const searchInput = document.getElementById(opts.searchInputId);
+    const resultsEl = document.getElementById(opts.searchResultsId);
+    if (searchInput && resultsEl) {
+        let timeout = null;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(timeout);
+            const q = this.value.trim();
+            if (q.length < 3) { resultsEl.classList.add('hidden'); return; }
+            timeout = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}&accept-language=id`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.length) { resultsEl.classList.add('hidden'); return; }
+                        resultsEl.classList.remove('hidden');
+                        resultsEl.innerHTML = data.map((place, i) =>
+                            `<button type="button" data-idx="${i}" class="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b border-slate-100 last:border-0 flex items-start gap-2">
+                                <i class="fa-solid fa-location-dot text-emerald-500 mt-0.5 text-[10px]"></i>
+                                <span>${place.display_name}</span>
+                            </button>`
+                        ).join('');
+                        // Click handler
+                        resultsEl.querySelectorAll('button').forEach(btn => {
+                            btn.addEventListener('click', function () {
+                                const idx = parseInt(this.dataset.idx);
+                                const place = data[idx];
+                                if (!place) return;
+                                const lat = parseFloat(place.lat);
+                                const lng = parseFloat(place.lon);
+                                map.setView([lat, lng], 16);
+                                marker.setLatLng([lat, lng]);
+                                syncCoords(lat, lng);
+                                resultsEl.classList.add('hidden');
+                                searchInput.value = place.display_name;
+                            });
+                        });
+                    })
+                    .catch(() => { resultsEl.classList.add('hidden'); });
+            }, 400);
+        });
+        // Hide results on blur
+        searchInput.addEventListener('blur', () => {
+            setTimeout(() => resultsEl.classList.add('hidden'), 300);
+        });
+        searchInput.addEventListener('focus', () => {
+            if (resultsEl.children.length) resultsEl.classList.remove('hidden');
+        });
+    }
+
+    // Invalidate size after render
+    setTimeout(() => { map.invalidateSize(); }, 400);
 }
 
 // Helpers (formatRupiah is defined in app.js)

@@ -687,7 +687,93 @@ function api_get_initial_data() {
 }
 
 /**
- * Get platform statistics (CO2 saved, portions rescued)
+ * Update user & merchant profile
+ */
+function api_update_profile($data) {
+    global $pdo;
+    $user = get_logged_in_user();
+    if (!$user) {
+        send_json(false, 'Anda harus login.');
+    }
+
+    $username = trim($data['username'] ?? '');
+    $email = trim($data['email'] ?? '');
+    if (empty($username) || empty($email)) {
+        send_json(false, 'Username dan email wajib diisi.');
+    }
+
+    // Check uniqueness
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?");
+    $stmt->execute([$username, $email, $user['id']]);
+    if ($stmt->fetch()) {
+        send_json(false, 'Username atau email sudah digunakan.');
+    }
+
+    $pdo->prepare("UPDATE users SET username = ?, email = ? WHERE id = ?")->execute([$username, $email, $user['id']]);
+
+    // Update session
+    $_SESSION['username'] = $username;
+
+    // If merchant, update merchant fields
+    if ($user['role'] === 'merchant') {
+        $business_name = trim($data['business_name'] ?? '');
+        $address = trim($data['address'] ?? '');
+        $phone = trim($data['phone'] ?? '');
+        $latitude = floatval($data['latitude'] ?? 0);
+        $longitude = floatval($data['longitude'] ?? 0);
+
+        if ($latitude != 0 && $longitude != 0) {
+            $stmtM = $pdo->prepare("UPDATE merchants SET business_name = ?, address = ?, phone = ?, latitude = ?, longitude = ? WHERE user_id = ?");
+            $stmtM->execute([$business_name, $address, $phone, $latitude, $longitude, $user['id']]);
+        } else {
+            $stmtM = $pdo->prepare("UPDATE merchants SET business_name = ?, address = ?, phone = ? WHERE user_id = ?");
+            $stmtM->execute([$business_name, $address, $phone, $user['id']]);
+        }
+    }
+
+    // Handle profile picture upload
+    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['profile_picture'];
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        $fileType = mime_content_type($file['tmp_name']);
+        if (!in_array($fileType, $allowedTypes)) {
+            send_json(false, 'Format foto profil harus JPG, PNG, atau WebP.');
+        }
+        if ($file['size'] > 2 * 1024 * 1024) {
+            send_json(false, 'Ukuran foto profil maksimal 2MB.');
+        }
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg';
+        $uploadDir = __DIR__ . '/../uploads/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+        $filename = 'profile_' . $user['id'] . '_' . uniqid() . '.' . $ext;
+        $dest = $uploadDir . $filename;
+        if (move_uploaded_file($file['tmp_name'], $dest)) {
+            $profileUrl = 'uploads/' . $filename;
+            $pdo->prepare("UPDATE users SET profile_picture = ? WHERE id = ?")->execute([$profileUrl, $user['id']]);
+        }
+    }
+
+    send_json(true, 'Profil berhasil diperbarui.');
+}
+
+/**
+ * Deactivate merchant account (set is_active=0)
+ */
+function api_deactivate_merchant() {
+    global $pdo;
+    $user = get_logged_in_user();
+    if (!$user || $user['role'] !== 'merchant') {
+        send_json(false, 'Hanya merchant yang dapat mengajukan nonaktif.');
+    }
+
+    $pdo->prepare("UPDATE merchants SET is_active = 0 WHERE user_id = ?")->execute([$user['id']]);
+    $_SESSION['merchant_active'] = 0;
+
+    send_json(true, 'Pengajuan nonaktif berhasil. Toko Anda sekarang tidak aktif.');
+}
+
+/**
+ * Get platform statistics (CO2 saved, portions rescued, merchants, rescuers)
  */
 function api_get_stats() {
     global $pdo;
@@ -697,11 +783,23 @@ function api_get_stats() {
         $stmt->execute();
         $totalPortions = $stmt->fetchColumn();
         
+        // Total active merchants
+        $stmtM = $pdo->prepare("SELECT COUNT(*) FROM merchants WHERE is_active = 1");
+        $stmtM->execute();
+        $totalMerchants = $stmtM->fetchColumn();
+        
+        // Total rescuers (users with role rescuer)
+        $stmtR = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'rescuer'");
+        $stmtR->execute();
+        $totalRescuers = $stmtR->fetchColumn();
+        
         // Estimate CO2: ~0.5kg CO2 per portion of food saved from landfill
         $co2Saved = round($totalPortions * 0.5, 1);
         
         send_json(true, 'Stats loaded.', [
             'total_portions' => intval($totalPortions),
+            'total_merchants' => intval($totalMerchants),
+            'total_rescuers' => intval($totalRescuers),
             'co2_saved' => $co2Saved
         ]);
     } catch (PDOException $e) {

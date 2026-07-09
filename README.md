@@ -1,6 +1,6 @@
 # 🍃 FoodRescue — Surplus Food Saving Platform
 
-A mobile-first web application that connects food merchants with surplus food to rescuers who want to save food from going to waste. Built with **PHP**, **Tailwind CSS**, **Vanilla JavaScript**, and **MySQL**.
+A mobile-first web application connecting food merchants with surplus food to rescuers who want to save food from waste. Built with **native PHP**, **Tailwind CSS**, **Vanilla JavaScript**, and **MySQL**.
 
 ![PHP](https://img.shields.io/badge/PHP-7.4+-777BB4?style=flat&logo=php&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4+-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
@@ -10,6 +10,11 @@ A mobile-first web application that connects food merchants with surplus food to
 ---
 
 ## ✨ Features
+
+### 🌊 Landing Page
+- **Interactive Splash** — Hero section with animated live stats counters
+- **How It Works** — 3-step visual: Merchant Upload → Find on Map → Claim & Pickup
+- **Live Counter** — Merchants, portions saved, active rescuers (via `get_stats` API)
 
 ### 🗺️ Rescuer View
 - **Interactive Map** — OpenStreetMap + Leaflet.js with real-time merchant locations
@@ -23,18 +28,29 @@ A mobile-first web application that connects food merchants with surplus food to
 - **QR Scanner** — Verify rescuer claim tickets by scanning QR codes
 - **Order Tracking** — View all incoming claims and revenue statistics
 - **Verification Flow** — Admin-approved merchant registration system
+- **Self Deactivation** — Request merchant account deactivation from profile page
 
 ### 🔐 Admin Portal
 - **Merchant Verification** — Review and activate/deactivate merchant accounts
 - **Dashboard Metrics** — Total merchants, active count, and pending verifications
 - **Role-Based Access** — Secure admin-only access with session validation
 
+### 👤 Profile Management
+- **Edit Profile** — Update username, email, and profile picture (JPG/PNG/WebP, max 2MB)
+- **Edit Store** — Update business name, address, phone, and map location (merchant only)
+- **Deactivate Merchant** — Self-service deactivation request button
+
+### ❓ FAQ Page
+- **Expandable Q&A** — Common questions about FoodRescue (registration, claiming, payment, fees)
+- **Easy Navigation** — Linked from landing page & header
+
 ### 🎨 UI/UX
 - **Mobile-First Design** — Optimized for smartphone screens with bottom navigation
 - **Glassmorphism Effects** — Modern frosted-glass UI components
 - **Toast Notifications** — Non-intrusive slide-in alerts for all user feedback
-- **Modal System** — Login, registration, logout confirmation, and food detail modals
+- **Modal System** — Login, registration, merchant registration, logout confirmation, food detail modals
 - **Responsive Layout** — Adapts from mobile to desktop with sidebar panels
+- **Bottom Sheet** — Food details slide up from bottom with smooth animation
 
 ---
 
@@ -43,14 +59,14 @@ A mobile-first web application that connects food merchants with surplus food to
 ```
 foodrescue/
 ├── config/
-│   └── db.php                  # MySQL connection + auto schema creation
+│   └── db.php                  # MySQL connection + auto-create schema (.env support)
 ├── includes/
-│   ├── auth.php                # Session management, CSRF, remember-me cookies
-│   └── api_handler.php         # All backend API logic (14 endpoints)
+│   ├── auth.php                # Session management, CSRF, remember-me cookies (30 days)
+│   └── api_handler.php         # All backend API logic (17 endpoints)
 ├── components/
 │   ├── header.php              # Sticky navbar + profile dropdown + toast container
-│   ├── footer.php              # Mobile bottom nav + script imports
-│   ├── map.php                 # Leaflet map canvas + controls
+│   ├── footer.php              # Mobile bottom nav + Leaflet imports + app.js
+│   ├── map.php                 # Leaflet map canvas + location controls
 │   ├── rescuer_dashboard.php   # Food list + map + search filters
 │   ├── merchant_dashboard.php  # Merchant panel + inventory + orders
 │   └── auth_modals.php         # Login, register, merchant reg, logout modals
@@ -59,12 +75,16 @@ foodrescue/
 │   │   ├── input.css           # Tailwind source + custom styles
 │   │   └── output.css          # Compiled Tailwind output
 │   └── js/
-│       ├── app.js              # Core app logic, AJAX, toast system
-│       └── map.js              # Leaflet map, markers, geolocation
-├── uploads/                    # User-uploaded food images
-├── index.php                   # Main entry point + view router
+│       ├── app.js              # Core app logic, AJAX, toast, filters
+│       └── map.js              # Leaflet map, markers, geolocation, bottom sheet
+├── uploads/                    # User-uploaded food images & profile pictures
+├── index.php                   # Main entry point + view router (rescuer/merchant)
+├── landing.php                 # Welcome splash page for new visitors
 ├── api.php                     # API router (action-based dispatch)
 ├── admin.php                   # Admin merchant management portal
+├── profile.php                 # Profile & store management page (merchant)
+├── faq.php                     # Interactive expandable FAQ page
+├── .env                        # Local environment config (DB_HOST, DB_USER, etc.)
 ├── tailwind.config.js          # Tailwind configuration
 ├── package.json                # npm scripts (build/watch)
 └── walkthrough.md              # Detailed project walkthrough
@@ -91,13 +111,17 @@ foodrescue/
 
 2. **Configure database** (optional — auto-creates on first load)
 
-   Edit [`config/db.php`](config/db.php) if your MySQL credentials differ:
-   ```php
-   $host = '127.0.0.1';
-   $user = 'root';
-   $pass = '';        // your MySQL password
-   $dbname = 'foodrescue';
+   Copy [`config/db.php`](config/db.php) supports `.env` file at project root.
+   Edit [`.env`](.env) if your MySQL credentials differ:
+   ```env
+   DB_HOST=127.0.0.1
+   DB_USER=root
+   DB_PASS=     # your MySQL password
+   DB_NAME=foodrescue
    ```
+
+   > For production (cPanel), create `.env.foodrescue.php` in home root.
+   > See [`config/db.php`](config/db.php) for details.
 
 3. **Install dependencies and build CSS**
    ```bash
@@ -171,16 +195,16 @@ Auto-created on first page load:
 
 | Table | Purpose |
 |-------|---------|
-| `users` | User accounts (rescuer/merchant/admin roles) |
-| `merchants` | Merchant profiles with location coordinates |
-| `food_items` | Surplus food listings with pricing and expiry |
-| `orders` | Claim records with payment and status tracking |
+| `users` | User accounts (rescuer/merchant/admin roles). Columns: `remember_token`, `reset_token`, `reset_token_expiry`, `profile_picture` |
+| `merchants` | Merchant profiles with location coordinates, active/inactive status |
+| `food_items` | Surplus food listings with original price, rescue price, expiry |
+| `orders` | Claim records with payment method (`cash`/`QRIS`), payment status, tracking status |
 
 ---
 
 ## 🛠️ API Endpoints
 
-All endpoints are routed through [`api.php`](api.php) via POST requests:
+All endpoints are routed through [`api.php`](api.php):
 
 | Action | Method | Auth Required | Description |
 |--------|--------|---------------|-------------|
@@ -195,8 +219,11 @@ All endpoints are routed through [`api.php`](api.php) via POST requests:
 | `verify_qr_claim` | POST | Merchant | Scan QR to complete order |
 | `toggle_merchant_status` | POST | Admin | Activate/deactivate merchant |
 | `get_merchants` | GET | No | Active merchant list |
+| `get_stats` | GET | No | Landing page stats (merchants, portions, rescuers) |
 | `forgot_password` | POST | No | Request password reset |
 | `reset_password` | POST | No | Set new password |
+| `update_profile` | POST | Yes | Update username, email, profile pic, store data |
+| `deactivate_merchant` | POST | Merchant | Request merchant account deactivation |
 | `get_initial_data` | GET | No | Combined data load |
 
 ---

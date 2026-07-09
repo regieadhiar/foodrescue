@@ -51,6 +51,7 @@ $csrfToken = get_csrf_token();
                 <!-- Desktop Navigation Links -->
                 <nav class="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-500">
                     <a href="index.php?switch_view=rescuer" class="hover:text-emerald-600 transition <?= $currentView === 'rescuer' ? 'text-emerald-600 border-b-2 border-emerald-500 pb-1 mt-1' : '' ?>">Jelajah Makanan</a>
+                    <a href="faq.php" class="hover:text-emerald-600 transition">FAQ</a>
                     <?php if ($currentUser): ?>
                         <button onclick="openOrdersHistory()" class="hover:text-emerald-600 transition">Klaim Saya</button>
                         <?php if ($currentUser['role'] === 'merchant'): ?>
@@ -74,9 +75,13 @@ $csrfToken = get_csrf_token();
                     <!-- If user logged in -->
                     <div class="relative inline-block text-left" id="user-menu-btn-container">
                         <button id="user-menu-btn" class="flex items-center gap-1.5 py-1.5 px-3 rounded-full hover:bg-slate-100 transition duration-200 border border-slate-200">
-                            <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs uppercase">
-                                <?= substr(htmlspecialchars($currentUser['username']), 0, 1); ?>
-                            </div>
+                            <?php if ($pic = get_profile_pic_url($currentUser)): ?>
+                                <img src="<?= $pic ?>" class="w-6 h-6 rounded-full object-cover">
+                            <?php else: ?>
+                                <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs uppercase">
+                                    <?= substr(htmlspecialchars($currentUser['username']), 0, 1); ?>
+                                </div>
+                            <?php endif; ?>
                             <span class="text-xs font-semibold text-slate-700 truncate max-w-[70px]"><?= htmlspecialchars($currentUser['username']) ?></span>
                             <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
                         </button>
@@ -106,7 +111,10 @@ $csrfToken = get_csrf_token();
                                     <i class="fa-solid fa-store-slash text-amber-500 w-4"></i> Jadi Merchant Toko
                                 </button>
                             <?php endif; ?>
-
+  
+                            <a href="profile.php" class="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 transition">
+                                <i class="fa-solid fa-user text-slate-500 w-4"></i> Profil Saya
+                            </a>
                             <button onclick="handleLogout()" class="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-left text-red-600 hover:bg-red-50 transition">
                                 <i class="fa-solid fa-right-from-bracket w-4"></i> Keluar
                             </button>
@@ -114,9 +122,12 @@ $csrfToken = get_csrf_token();
                     </div>
                 <?php else: ?>
                     <!-- If Guest -->
-                    <button onclick="openModal('login-modal')" class="text-xs font-semibold py-2 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-100 transition-all hover:shadow-emerald-200">
-                        Masuk / Daftar
-                    </button>
+                    <?php $isLanding = basename($_SERVER['SCRIPT_NAME']) === 'landing.php'; ?>
+                    <?php if (!$isLanding): ?>
+                        <button onclick="openModal('login-modal')" class="text-xs font-semibold py-2 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-100 transition-all hover:shadow-emerald-200">
+                            Masuk / Daftar
+                        </button>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
             

@@ -111,9 +111,36 @@ function initUserMenu() {
     }
 }
 
+function toggleMobileNav() {
+    const overlay = document.getElementById('mobile-nav-overlay');
+    if (!overlay) return;
+    const panel = document.getElementById('mobile-nav-panel');
+    if (overlay.classList.contains('hidden')) {
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            panel.style.transform = 'translateX(0)';
+        }, 50);
+    } else {
+        panel.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 300);
+    }
+}
+
 /**
  * Modal Management System
  */
+function handleLoginClick() {
+    // If modals are available (index.php), open login modal directly
+    if (document.getElementById('modal-backdrop')) {
+        openModal('login-modal');
+        return;
+    }
+    // On landing page, redirect to index
+    window.location.href = 'index.php';
+}
+
 function openModal(modalId) {
     const backdrop = document.getElementById('modal-backdrop');
     if (!backdrop) return;
@@ -139,7 +166,17 @@ function openModal(modalId) {
         
         // Initialize map picker if merchant reg modal
         if (modalId === 'merchant-reg-modal') {
-            setTimeout(() => initMapPicker(), 200);
+            setTimeout(() => {
+                initPickerWithSearch({
+                    containerEl: 'modal-map-picker',
+                    latInputId: 'reg-lat',
+                    lngInputId: 'reg-longitude',
+                    searchInputId: 'reg-map-search',
+                    searchResultsId: 'reg-map-results',
+                    mapInstanceVar: 'pickerMap',
+                    markerVar: 'pickerMarker'
+                });
+            }, 200);
         }
         
         // Hide login error when opening login modal
@@ -1278,3 +1315,67 @@ async function submitResetPassword(e) {
     }
 }
 
+async function submitProfileEdit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    try {
+        const res = await fetch('api.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast('Gagal memperbarui profil.', 'error');
+    }
+}
+
+function toggleEditProfile() {
+    const form = document.getElementById('profile-edit-form');
+    if (!form) return;
+    const wasHidden = form.classList.contains('hidden');
+    form.classList.toggle('hidden');
+    if (wasHidden) {
+        setTimeout(() => {
+            const lat = document.getElementById('edit-lat')?.value || '-7.215373';
+            const lng = document.getElementById('edit-lng')?.value || '107.899351';
+            initPickerWithSearch({
+                containerEl: 'edit-map-picker',
+                latInputId: 'edit-lat',
+                lngInputId: 'edit-lng',
+                searchInputId: 'edit-map-search',
+                searchResultsId: 'edit-map-results',
+                mapInstanceVar: 'editMap',
+                markerVar: 'editMarker',
+                lat: parseFloat(lat),
+                lng: parseFloat(lng)
+            });
+        }, 200);
+    }
+}
+
+async function submitDeactivateMerchant() {
+    if (!confirm('Yakin ingin mengajukan nonaktif merchant?')) return;
+    try {
+        const res = await fetch('api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'deactivate_merchant', csrf_token: getCsrfToken() })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast('Gagal mengajukan nonaktif.', 'error');
+    }
+}

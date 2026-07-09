@@ -1,6 +1,6 @@
-# 🍃 FoodRescue — Platform Penyelamatan Makanan Sisa
+# 🍃 FoodRescue — Platform Penyelamatan Makanan Surplus
 
-Aplikasi web berbasis mobile yang menghubungkan pedagang makanan dengan makanan sisa kepada penyelamat yang ingin menyelamatkan makanan dari pemborosan. Dibangun dengan **PHP**, **Tailwind CSS**, **Vanilla JavaScript**, dan **MySQL**.
+Aplikasi web berbasis mobile yang menghubungkan pedagang makanan surplus dengan masyarakat (rescuer) yang ingin menyelamatkan makanan dari pemborosan. Dibangun dengan **PHP native**, **Tailwind CSS**, **Vanilla JavaScript**, dan **MySQL**.
 
 ![PHP](https://img.shields.io/badge/PHP-7.4+-777BB4?style=flat&logo=php&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4+-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
@@ -11,30 +11,46 @@ Aplikasi web berbasis mobile yang menghubungkan pedagang makanan dengan makanan 
 
 ## ✨ Fitur
 
-### 🗺️ Tampilan Penyelamat
+### 🌊 Landing Page
+- **Sambutan Interaktif** — Halaman splash dengan hero section & statistik animasi
+- **Cara Kerja** — Visual 3 langkah: Merchant Upload → Temukan di Peta → Klaim & Ambil
+- **Live Counter** — Jumlah merchant, porsi terselamatkan, rescuer aktif (via API `get_stats`)
+
+### 🗺️ Tampilan Penyelamat (Rescuer)
 - **Peta Interaktif** — OpenStreetMap + Leaflet.js dengan lokasi pedagang real-time
-- **Katalog Makanan** — Jelajahi makanan sisa dengan pencarian, filter harga, dan kedaluwarsa
+- **Katalog Makanan** — Jelajahi makanan surplus dengan pencarian, filter harga, dan kedaluwarsa
 - **Sistem Klaim** — Reservasi porsi makanan dengan tiket QR untuk verifikasi pengambilan
 - **Riwayat Pesanan** — Lacak semua pesanan yang diklaim dengan pembaruan status
 - **Integrasi WhatsApp** — Kontak langsung ke pedagang untuk koordinasi pengambilan
 
-### 🏪 Dashboard Pedagang
-- **Manajemen Inventaris** — Posting makanan sisa dengan foto, harga, dan timer kedaluwarsa
+### 🏪 Dashboard Pedagang (Merchant)
+- **Manajemen Inventaris** — Posting makanan surplus dengan foto, harga, dan timer kedaluwarsa
 - **Pemindai QR** — Verifikasi tiket klaim penyelamat dengan memindai kode QR
 - **Pelacakan Pesanan** — Lihat semua klaim masuk dan statistik pendapatan
 - **Alur Verifikasi** — Sistem pendaftaran pedagang yang disetujui admin
+- **Nonaktif Mandiri** — Ajukan nonaktif akun merchant dari halaman profil
 
 ### 🔐 Portal Admin
 - **Verifikasi Pedagang** — Tinjau dan aktifkan/nonaktifkan akun pedagang
 - **Metrik Dashboard** — Total pedagang, jumlah aktif, dan verifikasi tertunda
 - **Akses Berbasis Peran** — Akses admin-only yang aman dengan validasi sesi
 
+### 👤 Manajemen Profil
+- **Edit Profil** — Ubah username, email, dan foto profil (JPG/PNG/WebP, maks 2MB)
+- **Edit Toko** — Ubah nama toko, alamat, nomor HP, dan lokasi di peta (khusus merchant)
+- **Nonaktif Merchant** — Tombol pengajuan nonaktif akun merchant dari profil
+
+### ❓ Halaman FAQ
+- **Expandable Q&A** — Pertanyaan umum seputar FoodRescue (daftar, klaim, pembayaran, biaya)
+- **Navigasi mudah** — Tautan dari landing page & header
+
 ### 🎨 UI/UX
 - **Desain Mobile-First** — Dioptimalkan untuk layar smartphone dengan navigasi bawah
 - **Efek Glassmorphism** — Komponen UI kaca buram modern
 - **Notifikasi Toast** — Alert slide-in non-intrusif untuk semua umpan balik pengguna
-- **Sistem Modal** — Login, registrasi, konfirmasi logout, dan modal detail makanan
+- **Sistem Modal** — Login, registrasi, registrasi merchant, konfirmasi logout, modal detail makanan
 - **Tata Letak Responsif** — Beradaptasi dari mobile ke desktop dengan panel sidebar
+- **Bottom Sheet** — Detail makanan muncul dari bawah dengan animasi geser
 
 ---
 
@@ -43,14 +59,14 @@ Aplikasi web berbasis mobile yang menghubungkan pedagang makanan dengan makanan 
 ```
 foodrescue/
 ├── config/
-│   └── db.php                  # Koneksi MySQL + pembuatan schema otomatis
+│   └── db.php                  # Koneksi MySQL + auto-create schema (.env support)
 ├── includes/
-│   ├── auth.php                # Manajemen sesi, CSRF, cookie remember-me
-│   └── api_handler.php         # Semua logika API backend (14 endpoint)
+│   ├── auth.php                # Manajemen sesi, CSRF, cookie remember-me (30 hari)
+│   └── api_handler.php         # Semua logika API backend (17 endpoint)
 ├── components/
 │   ├── header.php              # Navbar sticky + dropdown profil + container toast
-│   ├── footer.php              # Nav bawah mobile + import script
-│   ├── map.php                 # Kanvas peta Leaflet + kontrol
+│   ├── footer.php              # Nav bawah mobile + import script Leaflet + app.js
+│   ├── map.php                 # Kanvas peta Leaflet + kontrol lokasi
 │   ├── rescuer_dashboard.php   # Daftar makanan + peta + filter pencarian
 │   ├── merchant_dashboard.php  # Panel pedagang + inventaris + pesanan
 │   └── auth_modals.php         # Modal login, register, registrasi pedagang, logout
@@ -59,12 +75,16 @@ foodrescue/
 │   │   ├── input.css           # Source Tailwind + style kustom
 │   │   └── output.css          # Output Tailwind yang dikompilasi
 │   └── js/
-│       ├── app.js              # Logika core app, AJAX, sistem toast
-│       └── map.js              # Peta Leaflet, marker, geolokasi
-├── uploads/                    # Gambar makanan yang diupload pengguna
-├── index.php                   # Entry point utama + view router
+│       ├── app.js              # Logika core app, AJAX, toast, filter
+│       └── map.js              # Peta Leaflet, marker, geolokasi, bottom sheet
+├── uploads/                    # Gambar makanan & foto profil yang diupload
+├── index.php                   # Entry point utama + view router (rescuer/merchant)
+├── landing.php                 # Halaman splash sambutan untuk pengunjung baru
 ├── api.php                     # Router API (dispatch berbasis action)
 ├── admin.php                   # Portal manajemen pedagang admin
+├── profile.php                 # Halaman edit profil & toko (merchant)
+├── faq.php                     # Halaman FAQ interaktif expandable
+├── .env                        # Konfigurasi environment lokal (DB_HOST, DB_USER, dll)
 ├── tailwind.config.js          # Konfigurasi Tailwind
 ├── package.json                # npm scripts (build/watch)
 └── walkthrough.md              # Panduan detail proyek
@@ -91,13 +111,17 @@ foodrescue/
 
 2. **Konfigurasi database** (opsional — auto-create saat pertama kali load)
 
-   Edit [`config/db.php`](config/db.php) jika kredensial MySQL berbeda:
-   ```php
-   $host = '127.0.0.1';
-   $user = 'root';
-   $pass = '';        // password MySQL kamu
-   $dbname = 'foodrescue';
+   Salin [`config/db.php`](config/db.php) mendukung file `.env` di root proyek.
+   Edit [`.env`](.env) jika kredensial MySQL berbeda:
+   ```env
+   DB_HOST=127.0.0.1
+   DB_USER=root
+   DB_PASS=     # password MySQL kamu
+   DB_NAME=foodrescue
    ```
+
+   > Untuk production (cPanel), buat file `.env.foodrescue.php` di home root.
+   > Lihat [`config/db.php`](config/db.php) untuk detail.
 
 3. **Install dependencies dan build CSS**
    ```bash
@@ -171,32 +195,35 @@ Auto-dibuat saat pertama kali load halaman:
 
 | Tabel | Tujuan |
 |-------|--------|
-| `users` | Akun pengguna (peran penyelamat/pedagang/admin) |
-| `merchants` | Profil pedagang dengan koordinat lokasi |
-| `food_items` | Listing makanan sisa dengan harga dan kedaluwarsa |
-| `orders` | Catatan klaim dengan pelacakan pembayaran dan status |
+| `users` | Akun pengguna (peran rescuer/merchant/admin). Kolom: `remember_token`, `reset_token`, `reset_token_expiry`, `profile_picture` |
+| `merchants` | Profil pedagang dengan koordinat lokasi, status aktif/nonaktif |
+| `food_items` | Listing makanan surplus dengan harga asli, harga rescue, kedaluwarsa |
+| `orders` | Catatan klaim dengan metode bayar (`cash`/`QRIS`), status pembayaran, tracking status |
 
 ---
 
 ## 🛠️ Endpoint API
 
-Semua endpoint dirutekan melalui [`api.php`](api.php) via request POST:
+Semua endpoint dirutekan melalui [`api.php`](api.php):
 
 | Action | Method | Auth Diperlukan | Deskripsi |
 |--------|--------|---------------|-------------|
 | `login` | POST | Tidak | Autentikasi pengguna |
-| `register` | POST | Tidak | Pendaftaran penyelamat baru |
+| `register` | POST | Tidak | Pendaftaran rescuer baru |
 | `logout` | POST | Ya | Penghancuran sesi |
 | `register_merchant` | POST | Opsional | Pendaftaran pedagang |
-| `add_food_item` | POST | Pedagang | Posting makanan sisa |
+| `add_food_item` | POST | Pedagang | Posting makanan surplus |
 | `get_food_items` | GET | Tidak | Ambil listing makanan aktif |
-| `claim_food_item` | POST | Penyelamat | Reservasi porsi makanan |
-| `get_rescuer_orders` | POST | Penyelamat | Riwayat pesanan |
+| `claim_food_item` | POST | Rescuer | Reservasi porsi makanan |
+| `get_rescuer_orders` | POST | Rescuer | Riwayat pesanan |
 | `verify_qr_claim` | POST | Pedagang | Pindai QR untuk selesaikan pesanan |
 | `toggle_merchant_status` | POST | Admin | Aktifkan/nonaktifkan pedagang |
 | `get_merchants` | GET | Tidak | Daftar pedagang aktif |
+| `get_stats` | GET | Tidak | Statistik landing page (merchant, porsi, rescuer) |
 | `forgot_password` | POST | Tidak | Request reset password |
 | `reset_password` | POST | Tidak | Set password baru |
+| `update_profile` | POST | Ya | Update username, email, foto profil, data toko |
+| `deactivate_merchant` | POST | Merchant | Ajukan nonaktif akun merchant |
 | `get_initial_data` | GET | Tidak | Load data gabungan |
 
 ---
