@@ -135,7 +135,7 @@ $profilePic = !empty($user['profile_picture']) ? htmlspecialchars($user['profile
             <button type="submit" class="w-full py-3 bg-emerald-600 text-white rounded-xl text-sm font-bold">Simpan Perubahan</button>
         </form>
 
-        <?php if ($merchant): ?>
+        <?php if ($merchant && $merchant['is_active'] == 1): ?>
         <div class="px-6 pb-6">
             <button onclick="submitDeactivateMerchant()" class="w-full py-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold border border-red-100 hover:bg-red-100">
                 Pengajuan Nonaktif Merchant

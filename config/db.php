@@ -1,6 +1,8 @@
 <?php
 // config/db.php
 
+date_default_timezone_set('Asia/Jakarta');
+
 $env = [];
 
 $local_env = __DIR__ . '/../.env';

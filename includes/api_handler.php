@@ -229,6 +229,10 @@ function api_add_food_item($data) {
         send_json(false, 'Mohon isi semua data makanan dengan benar.');
     }
     
+    if ($rescuePrice > $originalPrice) {
+        send_json(false, 'Harga rescue tidak boleh lebih besar dari harga awal.');
+    }
+    
     // Process multiple uploaded images (min 1, max 3)
     $uploadDir = __DIR__ . '/../uploads/';
     if (!is_dir($uploadDir)) {

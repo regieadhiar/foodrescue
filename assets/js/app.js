@@ -437,7 +437,7 @@ function renderListFeed(items) {
         
         html += `
             <div data-food-idx="${idx}" onclick="handleFoodCardClick(this)" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex gap-3.5 hover:border-emerald-500/30 transition duration-200 cursor-pointer active:scale-[0.98]">
-                <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80'}" class="w-18 h-18 rounded-xl object-cover border border-slate-100 shadow-inner flex-shrink-0" alt="${item.title}">
+                <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80'}" class="w-16 h-16 rounded-xl object-cover border border-slate-100 shadow-inner flex-shrink-0 max-w-[64px]" alt="${item.title}">
                 
                 <div class="flex-grow min-w-0">
                     <div class="flex items-center gap-1.5">
@@ -677,7 +677,7 @@ function showPaymentMethodModal(foodId, qty, phone, businessName, rescuePrice) {
     // Attach handlers
     document.getElementById('pm-btn-cash').onclick = () => executeClaim(foodId, qty, phone, businessName, 'cash');
     document.getElementById('pm-btn-qris').onclick = () => {
-        closeActiveModal();
+        hideActiveModal();
         // Show QRIS payment modal first
         showQrisPaymentModal(totalPrice, businessName, () => {
             executeClaim(foodId, qty, phone, businessName, 'qris');
@@ -708,17 +708,29 @@ function showQrisPaymentModal(amount, merchantName, onConfirm) {
 }
 
 function confirmQrisPayment() {
-    closeActiveModal();
+    hideActiveModal();
     if (typeof window._qrisConfirmCallback === 'function') {
-        setTimeout(() => window._qrisConfirmCallback(), 350);
+        setTimeout(() => window._qrisConfirmCallback(), 50);
     }
 }
 
 /**
  * Execute the claim API call with selected payment method
  */
+function hideActiveModal() {
+    const backdrop = document.getElementById('modal-backdrop');
+    if (!backdrop) return;
+    backdrop.classList.add('hidden');
+    backdrop.classList.remove('opacity-100', 'opacity-0');
+    backdrop.querySelectorAll('.modal-content').forEach(mc => {
+        mc.classList.add('hidden');
+        mc.classList.add('scale-95');
+        mc.classList.remove('scale-100');
+    });
+}
+
 async function executeClaim(foodId, qty, phone, businessName, paymentMethod) {
-    closeActiveModal();
+    hideActiveModal();
     
     const payload = {
         action: 'claim_food_item',
@@ -757,6 +769,7 @@ async function executeClaim(foodId, qty, phone, businessName, paymentMethod) {
  * Show QR Ticket after successful claim
  */
 function showQRTicket(orderId, businessName, quantity, paymentMethod) {
+    console.log('showQRTicket called', { orderId, businessName });
     const qrData = `foodrescue-order:${orderId}`;
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}&bgcolor=ffffff&color=0f172a&margin=10`;
     
@@ -770,9 +783,10 @@ function showQRTicket(orderId, businessName, quantity, paymentMethod) {
     document.getElementById('qr-ticket-payment').textContent = `Metode: ${paymentLabel}`;
     
     openModal('qr-ticket-modal');
+    console.log('Modal opened, checking visibility');
     
-    // Reload food items to update stock
-    setTimeout(() => loadFoodItems(), 500);
+    // Reload food items silently to update stock (no modal interference)
+    setTimeout(() => loadFoodItems(), 1000);
 }
 
 /**

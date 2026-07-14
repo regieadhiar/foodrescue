@@ -36,6 +36,14 @@ $stmtItems = $pdo->prepare("
 $stmtItems->execute([$merchantId]);
 $allItems = $stmtItems->fetchAll();
 
+// Decode image_url JSON for each item
+foreach ($allItems as &$item) {
+    $rawImg = $item['image_url'] ?? '';
+    $decoded = json_decode($rawImg, true);
+    $item['display_img'] = (is_array($decoded) && !empty($decoded)) ? $decoded[0] : $rawImg;
+}
+unset($item);
+
 // Get orders received
 $stmtOrders = $pdo->prepare("
     SELECT o.id, o.quantity, o.status, o.created_at, f.title, f.rescue_price, u.username as rescuer_name, u.email as rescuer_email
@@ -174,7 +182,7 @@ foreach ($receivedOrders as $order) {
                                             </div>
                                         <?php endif; ?>
                                         
-                                        <img src="<?= htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150&q=80') ?>" class="w-16 h-16 rounded-xl object-cover border border-slate-100 flex-shrink-0" alt="<?= htmlspecialchars($item['title']) ?>">
+                                        <img src="<?= htmlspecialchars($item['display_img'] ?: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150&q=80') ?>" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150&q=80'" class="w-16 h-16 rounded-xl object-cover border border-slate-100 flex-shrink-0" alt="<?= htmlspecialchars($item['title']) ?>">
                                         
                                         <div class="flex-1 min-w-0">
                                             <h5 class="font-bold text-xs text-slate-700 truncate"><?= htmlspecialchars($item['title']) ?></h5>

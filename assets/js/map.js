@@ -167,7 +167,7 @@ function openFoodDetailSheet(merchantGroup) {
             </div>`;
         } else {
             const singleImg = images[0] || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80';
-            imageHtml = `<img src="${singleImg}" class="w-16 h-16 rounded-xl object-cover border border-slate-100 shadow-inner flex-shrink-0" alt="${food.title}">`;
+            imageHtml = `<img src="${singleImg}" class="w-16 h-16 rounded-xl object-cover border border-slate-100 shadow-inner flex-shrink-0 max-w-[64px]" alt="${food.title}">`;
         }
         
         foodsHtml += `
